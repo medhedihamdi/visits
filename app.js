@@ -4,6 +4,14 @@ let chart = null;
 let printChart = null;
 let customStatuses = [];
 let statusColors = {};
+let customTitles = {
+    main: "📞Father's visits",
+    printTable: "Visiting - Records",
+    printChart: "Visiting - Statistics"
+};
+
+// Register the datalabels plugin globally
+Chart.register(ChartDataLabels);
 
 const translations = {
     en: {
@@ -27,10 +35,14 @@ const translations = {
         confirmClear: "⚠️ Are you sure you want to clear all records?",
         noData: "❌ No data to show statistics!",
         noChartData: "❌ Not enough data to display chart!",
-        printTitle: "Visiting- table",
+        printTitle: "Visiting- Records",
         printChartTitle: "Visiting- Statistics",
         enterCustomStatus: "Enter custom status...",
         removeColor: "Remove",
+        titlesTitle: "📝 Custom Titles for Print",
+        printTableLabel: "📄 Table Title:",
+        printChartLabel: "📊 Statistics Title:",
+        editTitle: "✏️ Edit Title",
         statuses: {
             father_cancelled: "Father Cancelled",
             father_verified: "Father Verified",
@@ -64,6 +76,10 @@ const translations = {
         printChartTitle: "Kapcsolattartási Napló - Statisztika",
         enterCustomStatus: "Adjon meg egyedi státuszt...",
         removeColor: "Eltávolítás",
+        titlesTitle: "📝 Egyedi címek nyomtatáshoz",
+        printTableLabel: "📄 Táblázat címe:",
+        printChartLabel: "📊 Statisztika címe:",
+        editTitle: "✏️ Cím szerkesztése",
         statuses: {
             father_cancelled: "Apa által lemondott",
             father_verified: "Apa által igazolt",
@@ -83,9 +99,88 @@ const defaultColors = {
     provable: "#8b5cf6"
 };
 
+// ============= Load Custom Titles =============
+function loadCustomTitles() {
+    const saved = localStorage.getItem("customTitles");
+    if (saved) {
+        try {
+            customTitles = JSON.parse(saved);
+        } catch (e) {
+            customTitles = {
+                main: "📞Father's visits",
+                printTable: "Visiting - Records",
+                printChart: "Visiting - Statistics"
+            };
+        }
+    }
+}
+
+function saveCustomTitles() {
+    localStorage.setItem("customTitles", JSON.stringify(customTitles));
+}
+
+// ============= Update Main Title =============
+function updateMainTitle() {
+    const input = document.getElementById("mainTitle");
+    if (!input) return;
+    
+    const newTitle = input.value.trim() || "📞Father's visits";
+    customTitles.main = newTitle;
+    saveCustomTitles();
+    
+    document.getElementById("title").innerText = newTitle;
+}
+
+function editMainTitle() {
+    const input = document.getElementById("mainTitle");
+    if (!input) return;
+    input.focus();
+    input.select();
+}
+
+// ============= Update Print Titles =============
+function updatePrintTitles() {
+    const tableInput = document.getElementById("printTitleInput");
+    const chartInput = document.getElementById("printChartTitleInput");
+    
+    if (tableInput) {
+        customTitles.printTable = tableInput.value.trim() || "Visiting - Records";
+    }
+    
+    if (chartInput) {
+        customTitles.printChart = chartInput.value.trim() || "Visiting - Statistics";
+    }
+    
+    saveCustomTitles();
+    
+    const printTitle = document.getElementById("printTitle");
+    const printChartTitle = document.getElementById("printChartTitle");
+    
+    if (printTitle) printTitle.textContent = customTitles.printTable;
+    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
+}
+
+// ============= Load Titles into UI =============
+function loadTitlesIntoUI() {
+    const mainInput = document.getElementById("mainTitle");
+    const mainTitleDisplay = document.getElementById("title");
+    
+    if (mainInput) mainInput.value = customTitles.main;
+    if (mainTitleDisplay) mainTitleDisplay.innerText = customTitles.main;
+    
+    const tableInput = document.getElementById("printTitleInput");
+    const chartInput = document.getElementById("printChartTitleInput");
+    const printTitle = document.getElementById("printTitle");
+    const printChartTitle = document.getElementById("printChartTitle");
+    
+    if (tableInput) tableInput.value = customTitles.printTable;
+    if (chartInput) chartInput.value = customTitles.printChart;
+    if (printTitle) printTitle.textContent = customTitles.printTable;
+    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
+}
+
 // ============= Load Data =============
 function loadData() {
-    // Load logs
     const saved = localStorage.getItem("contactLogs");
     if (saved) {
         try {
@@ -95,7 +190,6 @@ function loadData() {
         }
     }
     
-    // Load custom statuses
     const savedCustom = localStorage.getItem("customStatuses");
     if (savedCustom) {
         try {
@@ -105,7 +199,6 @@ function loadData() {
         }
     }
     
-    // Load colors
     const savedColors = localStorage.getItem("statusColors");
     if (savedColors) {
         try {
@@ -153,8 +246,18 @@ function changeLanguage() {
     document.getElementById("statusHeader").innerText = t.status;
     document.getElementById("actionsHeader").innerText = t.actions;
     document.getElementById("customStatus").placeholder = t.enterCustomStatus;
+    
+    // Titles section
+    const titlesTitle = document.getElementById("titlesTitle");
+    const printTableLabel = document.getElementById("printTitleLabel");
+    const printChartLabel = document.getElementById("printChartTitleLabel");
+    const editBtn = document.querySelector('.title-control .btn-small');
+    
+    if (titlesTitle) titlesTitle.textContent = t.titlesTitle;
+    if (printTableLabel) printTableLabel.textContent = t.printTableLabel;
+    if (printChartLabel) printChartLabel.textContent = t.printChartLabel;
+    if (editBtn) editBtn.textContent = t.editTitle;
 
-    // Update status dropdown
     updateStatusDropdown();
     renderTable();
     renderColorManagement();
@@ -169,7 +272,6 @@ function updateStatusDropdown() {
     
     statusSelect.innerHTML = "";
     
-    // Add default statuses
     for (let key in t.statuses) {
         const option = document.createElement("option");
         option.value = key;
@@ -177,7 +279,6 @@ function updateStatusDropdown() {
         statusSelect.appendChild(option);
     }
     
-    // Add custom statuses
     customStatuses.forEach(status => {
         const option = document.createElement("option");
         option.value = status;
@@ -195,14 +296,9 @@ function renderColorManagement() {
     
     container.innerHTML = "";
     
-    // Get all status keys
-    const allStatuses = Object.keys(t.statuses).concat(customStatuses);
-    
-    // Group default and custom statuses
     const defaultKeys = Object.keys(t.statuses);
     const customKeys = customStatuses;
     
-    // Render default status colors
     const defaultContainer = document.getElementById("colorManagement");
     if (!defaultContainer) return;
     
@@ -220,7 +316,6 @@ function renderColorManagement() {
         defaultContainer.appendChild(div);
     });
     
-    // Render custom status colors
     customKeys.forEach(status => {
         const div = document.createElement("div");
         div.className = "color-item";
@@ -257,17 +352,14 @@ function addCustomColor() {
         return;
     }
     
-    // Check if status already exists
     const allStatuses = Object.keys(t.statuses).concat(customStatuses);
     if (allStatuses.includes(status)) {
         alert("This status already exists!");
         return;
     }
     
-    // Add to custom statuses
     customStatuses.push(status);
     
-    // Assign random color
     const randomColor = "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
     statusColors[status] = randomColor;
     
@@ -284,7 +376,6 @@ function removeCustomStatus(status) {
     const lang = document.getElementById("language").value;
     const t = translations[lang];
     
-    // Check if status is used in logs
     const isUsed = logs.some(log => log.status === status);
     if (isUsed) {
         alert(`Cannot remove "${status}" because it is used in existing records!`);
@@ -316,7 +407,6 @@ function addEntry() {
         return;
     }
 
-    // If custom status is entered, add it
     if (customStatus) {
         const lang = document.getElementById("language").value;
         const t = translations[lang];
@@ -331,7 +421,6 @@ function addEntry() {
             renderColorManagement();
         }
         
-        // Use custom status
         logs.push({ 
             id: Date.now(),
             date, 
@@ -339,7 +428,6 @@ function addEntry() {
         });
         if (customStatusInput) customStatusInput.value = "";
     } else {
-        // Use selected status
         logs.push({ 
             id: Date.now(),
             date, 
@@ -374,7 +462,6 @@ function editEntry(id) {
 
     document.getElementById("date").value = log.date;
     
-    // Check if status is in dropdown
     const statusSelect = document.getElementById("status");
     let found = false;
     for (let i = 0; i < statusSelect.options.length; i++) {
@@ -386,7 +473,6 @@ function editEntry(id) {
     }
     
     if (!found) {
-        // If status not in dropdown, add it
         const lang = document.getElementById("language").value;
         const t = translations[lang];
         const allStatuses = Object.keys(t.statuses).concat(customStatuses);
@@ -502,6 +588,8 @@ function generateChart() {
         return statusColors[keys[index]] || getColors(data.length)[index];
     });
 
+    const total = data.reduce((a, b) => a + b, 0);
+
     chart = new Chart(context, {
         type: "pie",
         data: {
@@ -516,27 +604,84 @@ function generateChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
+                }
+            },
             plugins: {
                 legend: {
-                    position: "bottom",
+                    position: "right",
+                    align: "center",
                     labels: {
-                        font: { size: 13, weight: "bold" },
-                        padding: 20,
+                        font: { 
+                            size: 13, 
+                            weight: "bold" 
+                        },
+                        padding: 15,
                         usePointStyle: true,
-                        pointStyle: "circle"
+                        pointStyle: "circle",
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            return data.labels.map((label, i) => {
+                                const value = data.datasets[0].data[i];
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return {
+                                    text: `${label} (${percentage}%)`,
+                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    strokeStyle: data.datasets[0].backgroundColor[i],
+                                    pointStyle: "circle",
+                                    hidden: false,
+                                    index: i
+                                };
+                            });
+                        }
                     }
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((context.parsed / total) * 100).toFixed(1);
-                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                            const value = context.parsed;
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value} (${percentage}%)`;
                         }
+                    }
+                },
+                datalabels: {
+                    display: function(context) {
+                        const value = context.dataset.data[context.dataIndex];
+                        return value > 0 && value / total > 0.05; // Only show if > 5%
+                    },
+                    color: '#fff',
+                    font: {
+                        weight: 'bold',
+                        size: 14
+                    },
+                    formatter: function(value) {
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${percentage}%`;
+                    },
+                    anchor: 'center',
+                    align: 'center',
+                    offset: 0,
+                    backgroundColor: function(context) {
+                        const color = context.dataset.backgroundColor[context.dataIndex];
+                        return color + 'CC';
+                    },
+                    borderRadius: 4,
+                    padding: {
+                        top: 4,
+                        bottom: 4,
+                        left: 6,
+                        right: 6
                     }
                 }
             }
-        }
+        },
+        plugins: [ChartDataLabels]
     });
 }
 
@@ -550,7 +695,6 @@ function getCategoryData() {
         provable: 0
     };
 
-    // Add custom statuses to categories
     customStatuses.forEach(status => {
         categories[status] = 0;
     });
@@ -559,7 +703,6 @@ function getCategoryData() {
         if (categories[log.status] !== undefined) {
             categories[log.status]++;
         } else {
-            // If status not in categories, add it
             categories[log.status] = 1;
         }
     });
@@ -597,7 +740,6 @@ function printAll() {
         return;
     }
 
-    // Prepare print table
     const printTableBody = document.getElementById("printTableBody");
     if (printTableBody) {
         printTableBody.innerHTML = "";
@@ -614,20 +756,18 @@ function printAll() {
         });
     }
 
-    // Update print titles and dates
     const printTitle = document.getElementById("printTitle");
     const printChartTitle = document.getElementById("printChartTitle");
     const printDate = document.getElementById("printDate");
     const printDate2 = document.getElementById("printDate2");
     
-    if (printTitle) printTitle.textContent = t.printTitle;
-    if (printChartTitle) printChartTitle.textContent = t.printChartTitle;
+    if (printTitle) printTitle.textContent = customTitles.printTable;
+    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
     
     const now = new Date().toLocaleString();
     if (printDate) printDate.textContent = now;
     if (printDate2) printDate2.textContent = now;
 
-    // Prepare print chart
     const categories = getCategoryData();
     const { labels, data } = processCategoryData(categories, t);
 
@@ -636,14 +776,12 @@ function printAll() {
         return;
     }
 
-    // Show print area
     const printArea = document.getElementById("printArea");
     if (printArea) {
         printArea.style.display = "block";
         printArea.offsetHeight;
     }
 
-    // Create print chart
     setTimeout(() => {
         const printCanvas = document.getElementById("printChart");
         if (!printCanvas) return;
@@ -655,10 +793,8 @@ function printAll() {
             printChart = null;
         }
         
-        // Set canvas size
         const container = printCanvas.parentElement;
         if (container) {
-            const rect = container.getBoundingClientRect();
             printCanvas.width = container.clientWidth || 500;
             printCanvas.height = container.clientHeight || 380;
         }
@@ -667,6 +803,8 @@ function printAll() {
             const keys = Object.keys(categories).filter(k => categories[k] > 0);
             return statusColors[keys[index]] || getColors(data.length)[index];
         });
+        
+        const total = data.reduce((a, b) => a + b, 0);
         
         printChart = new Chart(printCtx, {
             type: "pie",
@@ -684,19 +822,62 @@ function printAll() {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: "bottom",
+                        position: "right",
                         labels: {
                             font: { size: 14, weight: "bold" },
-                            padding: 20,
+                            padding: 15,
                             usePointStyle: true,
-                            pointStyle: "circle"
+                            pointStyle: "circle",
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        strokeStyle: data.datasets[0].backgroundColor[i],
+                                        pointStyle: "circle",
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: function(context) {
+                            const value = context.dataset.data[context.dataIndex];
+                            return value > 0 && value / total > 0.05;
+                        },
+                        color: '#fff',
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        },
+                        formatter: function(value) {
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${percentage}%`;
+                        },
+                        anchor: 'center',
+                        align: 'center',
+                        backgroundColor: function(context) {
+                            const color = context.dataset.backgroundColor[context.dataIndex];
+                            return color + 'CC';
+                        },
+                        borderRadius: 4,
+                        padding: {
+                            top: 4,
+                            bottom: 4,
+                            left: 6,
+                            right: 6
                         }
                     }
                 }
-            }
+            },
+            plugins: [ChartDataLabels]
         });
 
-        // Wait for chart to render then print
         setTimeout(() => {
             window.print();
         }, 800);
@@ -718,165 +899,8 @@ window.addEventListener('afterprint', function() {
 
 // ============= Initialize Page =============
 window.onload = function() {
-    loadData();
-    
-    const today = new Date().toISOString().split("T")[0];
-    const dateInput = document.getElementById("date");
-    if (dateInput) {
-        dateInput.value = today;
-    }
-    
-    const languageSelect = document.getElementById("language");
-    if (languageSelect) {
-        languageSelect.value = "en";
-    }
-    
-    changeLanguage();
-    updateRecordCount();
-};
-
-// Handle window resize
-window.addEventListener('resize', function() {
-    if (chart) {
-        chart.resize();
-    }
-});
-// ============= Custom Titles Management =============
-let customTitles = {
-    main: "📞Father's visits",
-    printTable: "Visiting - Records",
-    printChart: "Visiting - Statistics"
-};
-
-// ============= Load Custom Titles =============
-function loadCustomTitles() {
-    const saved = localStorage.getItem("customTitles");
-    if (saved) {
-        try {
-            customTitles = JSON.parse(saved);
-        } catch (e) {
-            customTitles = {
-                main: "📞Father's visits",
-                printTable: "Visiting - Records",
-                printChart: "Visiting - Statistics"
-            };
-        }
-    }
-}
-
-// ============= Save Custom Titles =============
-function saveCustomTitles() {
-    localStorage.setItem("customTitles", JSON.stringify(customTitles));
-}
-
-// ============= Update Main Title =============
-function updateMainTitle() {
-    const input = document.getElementById("mainTitle");
-    if (!input) return;
-    
-    const newTitle = input.value.trim() || "📞Father's visits";
-    customTitles.main = newTitle;
-    saveCustomTitles();
-    
-    // Update main title display
-    document.getElementById("title").innerText = newTitle;
-}
-
-// ============= Edit Main Title (button click) =============
-function editMainTitle() {
-    const input = document.getElementById("mainTitle");
-    if (!input) return;
-    
-    input.focus();
-    input.select();
-}
-
-// ============= Update Print Titles =============
-function updatePrintTitles() {
-    const tableInput = document.getElementById("printTitleInput");
-    const chartInput = document.getElementById("printChartTitleInput");
-    
-    if (tableInput) {
-        customTitles.printTable = tableInput.value.trim() || "Visiting - Records";
-    }
-    
-    if (chartInput) {
-        customTitles.printChart = chartInput.value.trim() || "Visiting - Statistics";
-    }
-    
-    saveCustomTitles();
-    
-    // Update print titles display
-    const printTitle = document.getElementById("printTitle");
-    const printChartTitle = document.getElementById("printChartTitle");
-    
-    if (printTitle) printTitle.textContent = customTitles.printTable;
-    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
-}
-
-// ============= Load Titles into UI =============
-function loadTitlesIntoUI() {
-    // Main title
-    const mainInput = document.getElementById("mainTitle");
-    const mainTitleDisplay = document.getElementById("title");
-    
-    if (mainInput) mainInput.value = customTitles.main;
-    if (mainTitleDisplay) mainTitleDisplay.innerText = customTitles.main;
-    
-    // Print titles
-    const tableInput = document.getElementById("printTitleInput");
-    const chartInput = document.getElementById("printChartTitleInput");
-    const printTitle = document.getElementById("printTitle");
-    const printChartTitle = document.getElementById("printChartTitle");
-    
-    if (tableInput) tableInput.value = customTitles.printTable;
-    if (chartInput) chartInput.value = customTitles.printChart;
-    if (printTitle) printTitle.textContent = customTitles.printTable;
-    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
-}
-
-// ============= Modify Change Language for Titles =============
-// Add title translations to existing translations object
-translations.en.titlesTitle = "📝 Custom Titles for Print";
-translations.en.printTableLabel = "📄 Table Title:";
-translations.en.printChartLabel = "📊 Statistics Title:";
-translations.en.editTitle = "✏️ Edit Title";
-
-translations.hu.titlesTitle = "📝 Egyedi címek nyomtatáshoz";
-translations.hu.printTableLabel = "📄 Táblázat címe:";
-translations.hu.printChartLabel = "📊 Statisztika címe:";
-translations.hu.editTitle = "✏️ Cím szerkesztése";
-
-// ============= Update Change Language Function =============
-const originalChangeLanguage = changeLanguage;
-changeLanguage = function() {
-    originalChangeLanguage();
-    
-    const lang = document.getElementById("language").value;
-    const t = translations[lang];
-    
-    // Update titles section
-    const titlesTitle = document.getElementById("titlesTitle");
-    const printTableLabel = document.getElementById("printTitleLabel");
-    const printChartLabel = document.getElementById("printChartTitleLabel");
-    const editBtn = document.querySelector('.title-control .btn-small');
-    
-    if (titlesTitle) titlesTitle.textContent = t.titlesTitle || "📝 Custom Titles for Print";
-    if (printTableLabel) printTableLabel.textContent = t.printTableLabel || "📄 Table Title:";
-    if (printChartLabel) printChartLabel.textContent = t.printChartLabel || "📊 Statistics Title:";
-    if (editBtn) editBtn.textContent = t.editTitle || "✏️ Edit Title";
-};
-
-// ============= Modify Initialize Page =============
-const originalInit = window.onload;
-window.onload = function() {
-    // Load custom titles first
     loadCustomTitles();
-    
-    // Load titles into UI
     loadTitlesIntoUI();
-    
-    // Then load other data
     loadData();
     
     const today = new Date().toISOString().split("T")[0];
@@ -893,7 +917,7 @@ window.onload = function() {
     changeLanguage();
     updateRecordCount();
     
-    // Add event listeners for title inputs
+    // Event listeners for title inputs
     const mainInput = document.getElementById("mainTitle");
     const tableInput = document.getElementById("printTitleInput");
     const chartInput = document.getElementById("printChartTitleInput");
@@ -926,119 +950,9 @@ window.onload = function() {
     }
 };
 
-// ============= Modify Print All Function =============
-const originalPrintAll = printAll;
-printAll = function() {
-    const lang = document.getElementById("language").value;
-    const t = translations[lang];
-
-    if (logs.length === 0) {
-        alert(t.noData);
-        return;
+// Handle window resize
+window.addEventListener('resize', function() {
+    if (chart) {
+        chart.resize();
     }
-
-    // Prepare print table
-    const printTableBody = document.getElementById("printTableBody");
-    if (printTableBody) {
-        printTableBody.innerHTML = "";
-        
-        const sorted = [...logs].reverse();
-        sorted.forEach(log => {
-            const row = document.createElement("tr");
-            const displayName = t.statuses[log.status] || log.status;
-            row.innerHTML = `
-                <td>${log.date}</td>
-                <td>${displayName}</td>
-            `;
-            printTableBody.appendChild(row);
-        });
-    }
-
-    // Update print titles and dates using custom titles
-    const printTitle = document.getElementById("printTitle");
-    const printChartTitle = document.getElementById("printChartTitle");
-    const printDate = document.getElementById("printDate");
-    const printDate2 = document.getElementById("printDate2");
-    
-    if (printTitle) printTitle.textContent = customTitles.printTable;
-    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
-    
-    const now = new Date().toLocaleString();
-    if (printDate) printDate.textContent = now;
-    if (printDate2) printDate2.textContent = now;
-
-    // Prepare print chart
-    const categories = getCategoryData();
-    const { labels, data } = processCategoryData(categories, t);
-
-    if (data.length === 0) {
-        alert(t.noChartData);
-        return;
-    }
-
-    // Show print area
-    const printArea = document.getElementById("printArea");
-    if (printArea) {
-        printArea.style.display = "block";
-        printArea.offsetHeight;
-    }
-
-    // Create print chart
-    setTimeout(() => {
-        const printCanvas = document.getElementById("printChart");
-        if (!printCanvas) return;
-        
-        const printCtx = printCanvas.getContext("2d");
-        
-        if (printChart) {
-            printChart.destroy();
-            printChart = null;
-        }
-        
-        // Set canvas size
-        const container = printCanvas.parentElement;
-        if (container) {
-            const rect = container.getBoundingClientRect();
-            printCanvas.width = container.clientWidth || 500;
-            printCanvas.height = container.clientHeight || 380;
-        }
-        
-        const colors = data.map((_, index) => {
-            const keys = Object.keys(categories).filter(k => categories[k] > 0);
-            return statusColors[keys[index]] || getColors(data.length)[index];
-        });
-        
-        printChart = new Chart(printCtx, {
-            type: "pie",
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors,
-                    borderWidth: 2,
-                    borderColor: "#fff"
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: "bottom",
-                        labels: {
-                            font: { size: 14, weight: "bold" },
-                            padding: 20,
-                            usePointStyle: true,
-                            pointStyle: "circle"
-                        }
-                    }
-                }
-            }
-        });
-
-        // Wait for chart to render then print
-        setTimeout(() => {
-            window.print();
-        }, 800);
-    }, 300);
-};
+});
