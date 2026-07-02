@@ -1,0 +1,743 @@
+// ============= Data & Translations =============
+let logs = [];
+let chart = null;
+let printChart = null;
+let customStatuses = [];
+let statusColors = {};
+
+const translations = {
+    en: {
+        title: "📞Father's visits",
+        add: "➕ Add",
+        date: "📅 Date",
+        status: "📌 Status",
+        customStatus: "✏️ Custom Status",
+        colorTitle: "🎨 Status Colors",
+        addColor: "➕ Add Custom Color",
+        stats: "📊 Statistics",
+        print: "🖨️ Print",
+        clear: "🗑️ Clear All",
+        records: "📋 Records",
+        chartTitle: "📊 Statistics",
+        actions: "⚙️ Actions",
+        edit: "✏️ Edit",
+        delete: "🗑️ Delete",
+        empty: "📭 No records yet",
+        confirmDelete: "Are you sure you want to delete this record?",
+        confirmClear: "⚠️ Are you sure you want to clear all records?",
+        noData: "❌ No data to show statistics!",
+        noChartData: "❌ Not enough data to display chart!",
+        printTitle: "Visiting- Records",
+        printChartTitle: "Visiting- Statistics",
+        enterCustomStatus: "Enter custom status...",
+        removeColor: "Remove",
+        statuses: {
+            father_cancelled: "Father Cancelled",
+            father_verified: "Father Verified",
+            mother_cancelled: "Mother Cancelled",
+            medical: "Medical Certificate",
+            provable: "Provable"
+        }
+    },
+    hu: {
+        title: "📞 Apa látogatásai",
+        add: "➕ Hozzáadás",
+        date: "📅 Dátum",
+        status: "📌 Státusz",
+        customStatus: "✏️ Egyedi státusz",
+        colorTitle: "🎨 Státusz színek",
+        addColor: "➕ Egyedi szín hozzáadása",
+        stats: "📊 Statisztika",
+        print: "🖨️ Nyomtatás",
+        clear: "🗑️ Minden törlése",
+        records: "📋 Rekordok",
+        chartTitle: "📊 Statisztika",
+        actions: "⚙️ Műveletek",
+        edit: "✏️ Szerkesztés",
+        delete: "🗑️ Törlés",
+        empty: "📭 Még nincsenek rekordok",
+        confirmDelete: "Biztosan törölni szeretné ezt a rekordot?",
+        confirmClear: "⚠️ Biztosan törölni szeretné az összes rekordot?",
+        noData: "❌ Nincs adat a statisztikákhoz!",
+        noChartData: "❌ Nincs elég adat a diagram megjelenítéséhez!",
+        printTitle: "Kapcsolattartási Napló - Rekordok",
+        printChartTitle: "Kapcsolattartási Napló - Statisztika",
+        enterCustomStatus: "Adjon meg egyedi státuszt...",
+        removeColor: "Eltávolítás",
+        statuses: {
+            father_cancelled: "Apa által lemondott",
+            father_verified: "Apa által igazolt",
+            mother_cancelled: "Anya által lemondott",
+            medical: "Orvosi igazolás",
+            provable: "Bizonyítható"
+        }
+    }
+};
+
+// ============= Default Colors =============
+const defaultColors = {
+    father_cancelled: "#ef4444",
+    father_verified: "#3b82f6",
+    mother_cancelled: "#f59e0b",
+    medical: "#10b981",
+    provable: "#8b5cf6"
+};
+
+// ============= Load Data =============
+function loadData() {
+    // Load logs
+    const saved = localStorage.getItem("contactLogs");
+    if (saved) {
+        try {
+            logs = JSON.parse(saved);
+        } catch (e) {
+            logs = [];
+        }
+    }
+    
+    // Load custom statuses
+    const savedCustom = localStorage.getItem("customStatuses");
+    if (savedCustom) {
+        try {
+            customStatuses = JSON.parse(savedCustom);
+        } catch (e) {
+            customStatuses = [];
+        }
+    }
+    
+    // Load colors
+    const savedColors = localStorage.getItem("statusColors");
+    if (savedColors) {
+        try {
+            statusColors = JSON.parse(savedColors);
+        } catch (e) {
+            statusColors = { ...defaultColors };
+        }
+    } else {
+        statusColors = { ...defaultColors };
+    }
+}
+
+function saveData() {
+    localStorage.setItem("contactLogs", JSON.stringify(logs));
+    localStorage.setItem("customStatuses", JSON.stringify(customStatuses));
+    localStorage.setItem("statusColors", JSON.stringify(statusColors));
+    updateRecordCount();
+}
+
+// ============= Update Record Count =============
+function updateRecordCount() {
+    const count = document.getElementById("recordCount");
+    if (count) {
+        count.textContent = logs.length;
+    }
+}
+
+// ============= Change Language =============
+function changeLanguage() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+
+    document.getElementById("title").innerText = t.title;
+    document.getElementById("addBtn").innerText = t.add;
+    document.getElementById("dateLabel").innerText = t.date;
+    document.getElementById("statusLabel").innerText = t.status;
+    document.getElementById("customStatusLabel").innerText = t.customStatus;
+    document.getElementById("colorTitle").innerText = t.colorTitle;
+    document.getElementById("statsBtn").innerText = t.stats;
+    document.getElementById("printBtn").innerText = t.print;
+    document.getElementById("clearBtn").innerText = t.clear;
+    document.getElementById("recordsTitle").innerText = t.records;
+    document.getElementById("chartTitle").innerText = t.chartTitle;
+    document.getElementById("dateHeader").innerText = t.date;
+    document.getElementById("statusHeader").innerText = t.status;
+    document.getElementById("actionsHeader").innerText = t.actions;
+    document.getElementById("customStatus").placeholder = t.enterCustomStatus;
+
+    // Update status dropdown
+    updateStatusDropdown();
+    renderTable();
+    renderColorManagement();
+    if (chart) generateChart();
+}
+
+// ============= Update Status Dropdown =============
+function updateStatusDropdown() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+    const statusSelect = document.getElementById("status");
+    
+    statusSelect.innerHTML = "";
+    
+    // Add default statuses
+    for (let key in t.statuses) {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = t.statuses[key];
+        statusSelect.appendChild(option);
+    }
+    
+    // Add custom statuses
+    customStatuses.forEach(status => {
+        const option = document.createElement("option");
+        option.value = status;
+        option.textContent = status;
+        statusSelect.appendChild(option);
+    });
+}
+
+// ============= Render Color Management =============
+function renderColorManagement() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+    const container = document.getElementById("customColorsContainer");
+    if (!container) return;
+    
+    container.innerHTML = "";
+    
+    // Get all status keys
+    const allStatuses = Object.keys(t.statuses).concat(customStatuses);
+    
+    // Group default and custom statuses
+    const defaultKeys = Object.keys(t.statuses);
+    const customKeys = customStatuses;
+    
+    // Render default status colors
+    const defaultContainer = document.getElementById("colorManagement");
+    if (!defaultContainer) return;
+    
+    defaultContainer.innerHTML = "";
+    
+    defaultKeys.forEach(key => {
+        const div = document.createElement("div");
+        div.className = "color-item";
+        const color = statusColors[key] || defaultColors[key] || "#94a3b8";
+        div.innerHTML = `
+            <span>${t.statuses[key]}</span>
+            <input type="color" value="${color}" 
+                   onchange="updateColor('${key}', this.value)" />
+        `;
+        defaultContainer.appendChild(div);
+    });
+    
+    // Render custom status colors
+    customKeys.forEach(status => {
+        const div = document.createElement("div");
+        div.className = "color-item";
+        const color = statusColors[status] || "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        div.innerHTML = `
+            <span>${status}</span>
+            <input type="color" value="${color}" 
+                   onchange="updateColor('${status}', this.value)" />
+            <button class="remove-color" onclick="removeCustomStatus('${status}')">${t.removeColor}</button>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ============= Update Color =============
+function updateColor(statusKey, color) {
+    statusColors[statusKey] = color;
+    saveData();
+    if (chart) generateChart();
+}
+
+// ============= Add Custom Color =============
+function addCustomColor() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+    
+    const statusInput = document.getElementById("customStatus");
+    if (!statusInput) return;
+    
+    const status = statusInput.value.trim();
+    
+    if (!status) {
+        alert("Please enter a custom status name!");
+        return;
+    }
+    
+    // Check if status already exists
+    const allStatuses = Object.keys(t.statuses).concat(customStatuses);
+    if (allStatuses.includes(status)) {
+        alert("This status already exists!");
+        return;
+    }
+    
+    // Add to custom statuses
+    customStatuses.push(status);
+    
+    // Assign random color
+    const randomColor = "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+    statusColors[status] = randomColor;
+    
+    statusInput.value = "";
+    saveData();
+    updateStatusDropdown();
+    renderColorManagement();
+    renderTable();
+    if (chart) generateChart();
+}
+
+// ============= Remove Custom Status =============
+function removeCustomStatus(status) {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+    
+    // Check if status is used in logs
+    const isUsed = logs.some(log => log.status === status);
+    if (isUsed) {
+        alert(`Cannot remove "${status}" because it is used in existing records!`);
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to remove "${status}"?`)) {
+        customStatuses = customStatuses.filter(s => s !== status);
+        delete statusColors[status];
+        saveData();
+        updateStatusDropdown();
+        renderColorManagement();
+        renderTable();
+        if (chart) generateChart();
+    }
+}
+
+// ============= Add Entry =============
+function addEntry() {
+    const date = document.getElementById("date").value;
+    const statusSelect = document.getElementById("status");
+    const status = statusSelect.value;
+    const customStatusInput = document.getElementById("customStatus");
+    const customStatus = customStatusInput ? customStatusInput.value.trim() : "";
+
+    if (!date) {
+        const lang = document.getElementById("language").value;
+        alert(translations[lang].noData || "Please select a date!");
+        return;
+    }
+
+    // If custom status is entered, add it
+    if (customStatus) {
+        const lang = document.getElementById("language").value;
+        const t = translations[lang];
+        const allStatuses = Object.keys(t.statuses).concat(customStatuses);
+        
+        if (!allStatuses.includes(customStatus)) {
+            customStatuses.push(customStatus);
+            const randomColor = "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+            statusColors[customStatus] = randomColor;
+            saveData();
+            updateStatusDropdown();
+            renderColorManagement();
+        }
+        
+        // Use custom status
+        logs.push({ 
+            id: Date.now(),
+            date, 
+            status: customStatus
+        });
+        if (customStatusInput) customStatusInput.value = "";
+    } else {
+        // Use selected status
+        logs.push({ 
+            id: Date.now(),
+            date, 
+            status
+        });
+    }
+    
+    saveData();
+    renderTable();
+    
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("date").value = today;
+    
+    if (chart) generateChart();
+}
+
+// ============= Delete Entry =============
+function deleteEntry(id) {
+    const lang = document.getElementById("language").value;
+    if (confirm(translations[lang].confirmDelete)) {
+        logs = logs.filter(log => log.id !== id);
+        saveData();
+        renderTable();
+        if (chart) generateChart();
+    }
+}
+
+// ============= Edit Entry =============
+function editEntry(id) {
+    const log = logs.find(log => log.id === id);
+    if (!log) return;
+
+    document.getElementById("date").value = log.date;
+    
+    // Check if status is in dropdown
+    const statusSelect = document.getElementById("status");
+    let found = false;
+    for (let i = 0; i < statusSelect.options.length; i++) {
+        if (statusSelect.options[i].value === log.status) {
+            statusSelect.value = log.status;
+            found = true;
+            break;
+        }
+    }
+    
+    if (!found) {
+        // If status not in dropdown, add it
+        const lang = document.getElementById("language").value;
+        const t = translations[lang];
+        const allStatuses = Object.keys(t.statuses).concat(customStatuses);
+        
+        if (!allStatuses.includes(log.status)) {
+            customStatuses.push(log.status);
+            const randomColor = "#" + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+            statusColors[log.status] = randomColor;
+            saveData();
+            updateStatusDropdown();
+            renderColorManagement();
+        }
+        
+        statusSelect.value = log.status;
+    }
+
+    logs = logs.filter(log => log.id !== id);
+    saveData();
+    renderTable();
+    if (chart) generateChart();
+
+    document.getElementById("addBtn").focus();
+}
+
+// ============= Render Table =============
+function renderTable() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+    const table = document.getElementById("logTable");
+
+    if (!table) return;
+
+    if (logs.length === 0) {
+        table.innerHTML = `<tr><td colspan="3" class="empty-msg">${t.empty}</td></tr>`;
+        updateRecordCount();
+        return;
+    }
+
+    table.innerHTML = "";
+    const sorted = [...logs].reverse();
+    sorted.forEach(log => {
+        const row = document.createElement("tr");
+        const color = statusColors[log.status] || "#94a3b8";
+        const displayName = t.statuses[log.status] || log.status;
+        row.innerHTML = `
+            <td>${log.date}</td>
+            <td>
+                <span class="status-badge" style="background-color: ${color}">
+                    ${displayName}
+                </span>
+            </td>
+            <td>
+                <button class="action-btn edit" onclick="editEntry(${log.id})">✏️</button>
+                <button class="action-btn delete" onclick="deleteEntry(${log.id})">🗑️</button>
+            </td>
+        `;
+        table.appendChild(row);
+    });
+    
+    updateRecordCount();
+}
+
+// ============= Clear All =============
+function clearAll() {
+    const lang = document.getElementById("language").value;
+    if (confirm(translations[lang].confirmClear)) {
+        logs = [];
+        saveData();
+        renderTable();
+        if (chart) {
+            chart.destroy();
+            chart = null;
+            document.getElementById("chartSection").style.display = "none";
+        }
+    }
+}
+
+// ============= Generate Chart =============
+function generateChart() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+
+    if (logs.length === 0) {
+        alert(t.noData);
+        return;
+    }
+
+    const categories = getCategoryData();
+    const { labels, data } = processCategoryData(categories, t);
+
+    if (data.length === 0) {
+        alert(t.noChartData);
+        return;
+    }
+
+    const chartSection = document.getElementById("chartSection");
+    if (chartSection) {
+        chartSection.style.display = "block";
+    }
+
+    const ctx = document.getElementById("myChart");
+    if (!ctx) return;
+    
+    const context = ctx.getContext("2d");
+
+    if (chart) {
+        chart.destroy();
+        chart = null;
+    }
+
+    const colors = data.map((_, index) => {
+        const keys = Object.keys(categories).filter(k => categories[k] > 0);
+        return statusColors[keys[index]] || getColors(data.length)[index];
+    });
+
+    chart = new Chart(context, {
+        type: "pie",
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderWidth: 3,
+                borderColor: "#fff"
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: "bottom",
+                    labels: {
+                        font: { size: 13, weight: "bold" },
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: "circle"
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return `${context.label}: ${context.parsed} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ============= Helper Functions =============
+function getCategoryData() {
+    const categories = {
+        father_cancelled: 0,
+        father_verified: 0,
+        mother_cancelled: 0,
+        medical: 0,
+        provable: 0
+    };
+
+    // Add custom statuses to categories
+    customStatuses.forEach(status => {
+        categories[status] = 0;
+    });
+
+    logs.forEach(log => {
+        if (categories[log.status] !== undefined) {
+            categories[log.status]++;
+        } else {
+            // If status not in categories, add it
+            categories[log.status] = 1;
+        }
+    });
+    
+    return categories;
+}
+
+function processCategoryData(categories, t) {
+    const labels = [];
+    const data = [];
+    
+    for (let key in categories) {
+        if (categories[key] > 0) {
+            const displayName = t.statuses[key] || key;
+            labels.push(displayName);
+            data.push(categories[key]);
+        }
+    }
+    
+    return { labels, data };
+}
+
+function getColors(count) {
+    const colors = ["#ef4444", "#3b82f6", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16"];
+    return colors.slice(0, count);
+}
+
+// ============= Print All =============
+function printAll() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+
+    if (logs.length === 0) {
+        alert(t.noData);
+        return;
+    }
+
+    // Prepare print table
+    const printTableBody = document.getElementById("printTableBody");
+    if (printTableBody) {
+        printTableBody.innerHTML = "";
+        
+        const sorted = [...logs].reverse();
+        sorted.forEach(log => {
+            const row = document.createElement("tr");
+            const displayName = t.statuses[log.status] || log.status;
+            row.innerHTML = `
+                <td>${log.date}</td>
+                <td>${displayName}</td>
+            `;
+            printTableBody.appendChild(row);
+        });
+    }
+
+    // Update print titles and dates
+    const printTitle = document.getElementById("printTitle");
+    const printChartTitle = document.getElementById("printChartTitle");
+    const printDate = document.getElementById("printDate");
+    const printDate2 = document.getElementById("printDate2");
+    
+    if (printTitle) printTitle.textContent = t.printTitle;
+    if (printChartTitle) printChartTitle.textContent = t.printChartTitle;
+    
+    const now = new Date().toLocaleString();
+    if (printDate) printDate.textContent = now;
+    if (printDate2) printDate2.textContent = now;
+
+    // Prepare print chart
+    const categories = getCategoryData();
+    const { labels, data } = processCategoryData(categories, t);
+
+    if (data.length === 0) {
+        alert(t.noChartData);
+        return;
+    }
+
+    // Show print area
+    const printArea = document.getElementById("printArea");
+    if (printArea) {
+        printArea.style.display = "block";
+        printArea.offsetHeight;
+    }
+
+    // Create print chart
+    setTimeout(() => {
+        const printCanvas = document.getElementById("printChart");
+        if (!printCanvas) return;
+        
+        const printCtx = printCanvas.getContext("2d");
+        
+        if (printChart) {
+            printChart.destroy();
+            printChart = null;
+        }
+        
+        // Set canvas size
+        const container = printCanvas.parentElement;
+        if (container) {
+            const rect = container.getBoundingClientRect();
+            printCanvas.width = container.clientWidth || 500;
+            printCanvas.height = container.clientHeight || 380;
+        }
+        
+        const colors = data.map((_, index) => {
+            const keys = Object.keys(categories).filter(k => categories[k] > 0);
+            return statusColors[keys[index]] || getColors(data.length)[index];
+        });
+        
+        printChart = new Chart(printCtx, {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: "#fff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            font: { size: 14, weight: "bold" },
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: "circle"
+                        }
+                    }
+                }
+            }
+        });
+
+        // Wait for chart to render then print
+        setTimeout(() => {
+            window.print();
+        }, 800);
+    }, 300);
+}
+
+// Handle print dialog close
+window.addEventListener('afterprint', function() {
+    const printArea = document.getElementById("printArea");
+    if (printArea) {
+        printArea.style.display = "none";
+    }
+    
+    if (printChart) {
+        printChart.destroy();
+        printChart = null;
+    }
+});
+
+// ============= Initialize Page =============
+window.onload = function() {
+    loadData();
+    
+    const today = new Date().toISOString().split("T")[0];
+    const dateInput = document.getElementById("date");
+    if (dateInput) {
+        dateInput.value = today;
+    }
+    
+    const languageSelect = document.getElementById("language");
+    if (languageSelect) {
+        languageSelect.value = "en";
+    }
+    
+    changeLanguage();
+    updateRecordCount();
+};
+
+// Handle window resize
+window.addEventListener('resize', function() {
+    if (chart) {
+        chart.resize();
+    }
+});

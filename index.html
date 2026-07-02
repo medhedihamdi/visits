@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact Log</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <!-- Header and Language Selection -->
+        <header class="header">
+            <div class="language-box">
+                <label for="language">🌐 Language:</label>
+                <select id="language" onchange="changeLanguage()">
+                    <option value="en">English</option>
+                    <option value="hu">Magyar</option>
+                </select>
+            </div>
+            <h1 id="title">📞Father's visits</h1>
+        </header>
+
+        <!-- Input Form -->
+        <section class="form-section">
+            <div class="form-box">
+                <div class="input-group">
+                    <label for="date" id="dateLabel">📅 Date</label>
+                    <input type="date" id="date" />
+                </div>
+                <div class="input-group">
+                    <label for="status" id="statusLabel">📌 Status</label>
+                    <select id="status">
+                        <option value="father_cancelled">Father Cancelled</option>
+                        <option value="father_verified">Father Verified</option>
+                        <option value="mother_cancelled">Mother Cancelled</option>
+                        <option value="medical">Medical Certificate</option>
+                        <option value="provable">Provable</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="customStatus" id="customStatusLabel">✏️ Custom Status</label>
+                    <input type="text" id="customStatus" placeholder="Enter custom status..." />
+                </div>
+                <button onclick="addEntry()" id="addBtn" class="btn-primary">
+                    ➕ Add
+                </button>
+            </div>
+        </section>
+
+        <!-- Color Management -->
+        <section class="color-section">
+            <h3 id="colorTitle">🎨 Status Colors</h3>
+            <div class="color-management" id="colorManagement">
+                <div class="color-item">
+                    <span>Father Cancelled</span>
+                    <input type="color" value="#ef4444" onchange="updateColor('father_cancelled', this.value)" />
+                </div>
+                <div class="color-item">
+                    <span>Father Verified</span>
+                    <input type="color" value="#3b82f6" onchange="updateColor('father_verified', this.value)" />
+                </div>
+                <div class="color-item">
+                    <span>Mother Cancelled</span>
+                    <input type="color" value="#f59e0b" onchange="updateColor('mother_cancelled', this.value)" />
+                </div>
+                <div class="color-item">
+                    <span>Medical Certificate</span>
+                    <input type="color" value="#10b981" onchange="updateColor('medical', this.value)" />
+                </div>
+                <div class="color-item">
+                    <span>Provable</span>
+                    <input type="color" value="#8b5cf6" onchange="updateColor('provable', this.value)" />
+                </div>
+            </div>
+            <div id="customColorsContainer"></div>
+            <button onclick="addCustomColor()" class="btn-small btn-success">➕ Add Custom Color</button>
+        </section>
+
+        <!-- Table -->
+        <section class="table-section">
+            <div class="table-header">
+                <h2 id="recordsTitle">📋 Records</h2>
+                <span id="recordCount">0</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th id="dateHeader">📅 Date</th>
+                            <th id="statusHeader">📌 Status</th>
+                            <th id="actionsHeader">⚙️ Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTable"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Control Buttons -->
+        <div class="btn-group">
+            <button onclick="generateChart()" id="statsBtn" class="btn-success">
+                📊 Statistics
+            </button>
+            <button onclick="printAll()" id="printBtn" class="btn-secondary">
+                🖨️ Print
+            </button>
+            <button onclick="clearAll()" id="clearBtn" class="btn-danger">
+                🗑️ Clear All
+            </button>
+        </div>
+
+        <!-- Chart -->
+        <section class="chart-section" id="chartSection" style="display: none;">
+            <h2 id="chartTitle">📊 Statistics</h2>
+            <div class="chart-container">
+                <canvas id="myChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <!-- Print Area -->
+    <div id="printArea" style="display: none;">
+        <!-- Page 1: Table -->
+        <div class="print-page" id="printPage1">
+            <h1 id="printTitle">Contact Log - Records</h1>
+            <table class="print-table" id="printTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="printTableBody"></tbody>
+            </table>
+            <div class="print-footer">
+                <p>Generated on: <span id="printDate"></span></p>
+            </div>
+        </div>
+
+        <!-- Page 2: Chart -->
+        <div class="print-page" id="printPage2">
+            <h1 id="printChartTitle">Contact Log - Statistics</h1>
+            <div class="print-chart-wrapper">
+                <div class="print-chart-container">
+                    <canvas id="printChart"></canvas>
+                </div>
+            </div>
+            <div class="print-footer">
+                <p>Generated on: <span id="printDate2"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
