@@ -27,7 +27,7 @@ const translations = {
         confirmClear: "⚠️ Are you sure you want to clear all records?",
         noData: "❌ No data to show statistics!",
         noChartData: "❌ Not enough data to display chart!",
-        printTitle: "Visiting- Records",
+        printTitle: "Visiting- table",
         printChartTitle: "Visiting- Statistics",
         enterCustomStatus: "Enter custom status...",
         removeColor: "Remove",
@@ -741,3 +741,304 @@ window.addEventListener('resize', function() {
         chart.resize();
     }
 });
+// ============= Custom Titles Management =============
+let customTitles = {
+    main: "📞Father's visits",
+    printTable: "Visiting - Records",
+    printChart: "Visiting - Statistics"
+};
+
+// ============= Load Custom Titles =============
+function loadCustomTitles() {
+    const saved = localStorage.getItem("customTitles");
+    if (saved) {
+        try {
+            customTitles = JSON.parse(saved);
+        } catch (e) {
+            customTitles = {
+                main: "📞Father's visits",
+                printTable: "Visiting - Records",
+                printChart: "Visiting - Statistics"
+            };
+        }
+    }
+}
+
+// ============= Save Custom Titles =============
+function saveCustomTitles() {
+    localStorage.setItem("customTitles", JSON.stringify(customTitles));
+}
+
+// ============= Update Main Title =============
+function updateMainTitle() {
+    const input = document.getElementById("mainTitle");
+    if (!input) return;
+    
+    const newTitle = input.value.trim() || "📞Father's visits";
+    customTitles.main = newTitle;
+    saveCustomTitles();
+    
+    // Update main title display
+    document.getElementById("title").innerText = newTitle;
+}
+
+// ============= Edit Main Title (button click) =============
+function editMainTitle() {
+    const input = document.getElementById("mainTitle");
+    if (!input) return;
+    
+    input.focus();
+    input.select();
+}
+
+// ============= Update Print Titles =============
+function updatePrintTitles() {
+    const tableInput = document.getElementById("printTitleInput");
+    const chartInput = document.getElementById("printChartTitleInput");
+    
+    if (tableInput) {
+        customTitles.printTable = tableInput.value.trim() || "Visiting - Records";
+    }
+    
+    if (chartInput) {
+        customTitles.printChart = chartInput.value.trim() || "Visiting - Statistics";
+    }
+    
+    saveCustomTitles();
+    
+    // Update print titles display
+    const printTitle = document.getElementById("printTitle");
+    const printChartTitle = document.getElementById("printChartTitle");
+    
+    if (printTitle) printTitle.textContent = customTitles.printTable;
+    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
+}
+
+// ============= Load Titles into UI =============
+function loadTitlesIntoUI() {
+    // Main title
+    const mainInput = document.getElementById("mainTitle");
+    const mainTitleDisplay = document.getElementById("title");
+    
+    if (mainInput) mainInput.value = customTitles.main;
+    if (mainTitleDisplay) mainTitleDisplay.innerText = customTitles.main;
+    
+    // Print titles
+    const tableInput = document.getElementById("printTitleInput");
+    const chartInput = document.getElementById("printChartTitleInput");
+    const printTitle = document.getElementById("printTitle");
+    const printChartTitle = document.getElementById("printChartTitle");
+    
+    if (tableInput) tableInput.value = customTitles.printTable;
+    if (chartInput) chartInput.value = customTitles.printChart;
+    if (printTitle) printTitle.textContent = customTitles.printTable;
+    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
+}
+
+// ============= Modify Change Language for Titles =============
+// Add title translations to existing translations object
+translations.en.titlesTitle = "📝 Custom Titles for Print";
+translations.en.printTableLabel = "📄 Table Title:";
+translations.en.printChartLabel = "📊 Statistics Title:";
+translations.en.editTitle = "✏️ Edit Title";
+
+translations.hu.titlesTitle = "📝 Egyedi címek nyomtatáshoz";
+translations.hu.printTableLabel = "📄 Táblázat címe:";
+translations.hu.printChartLabel = "📊 Statisztika címe:";
+translations.hu.editTitle = "✏️ Cím szerkesztése";
+
+// ============= Update Change Language Function =============
+const originalChangeLanguage = changeLanguage;
+changeLanguage = function() {
+    originalChangeLanguage();
+    
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+    
+    // Update titles section
+    const titlesTitle = document.getElementById("titlesTitle");
+    const printTableLabel = document.getElementById("printTitleLabel");
+    const printChartLabel = document.getElementById("printChartTitleLabel");
+    const editBtn = document.querySelector('.title-control .btn-small');
+    
+    if (titlesTitle) titlesTitle.textContent = t.titlesTitle || "📝 Custom Titles for Print";
+    if (printTableLabel) printTableLabel.textContent = t.printTableLabel || "📄 Table Title:";
+    if (printChartLabel) printChartLabel.textContent = t.printChartLabel || "📊 Statistics Title:";
+    if (editBtn) editBtn.textContent = t.editTitle || "✏️ Edit Title";
+};
+
+// ============= Modify Initialize Page =============
+const originalInit = window.onload;
+window.onload = function() {
+    // Load custom titles first
+    loadCustomTitles();
+    
+    // Load titles into UI
+    loadTitlesIntoUI();
+    
+    // Then load other data
+    loadData();
+    
+    const today = new Date().toISOString().split("T")[0];
+    const dateInput = document.getElementById("date");
+    if (dateInput) {
+        dateInput.value = today;
+    }
+    
+    const languageSelect = document.getElementById("language");
+    if (languageSelect) {
+        languageSelect.value = "en";
+    }
+    
+    changeLanguage();
+    updateRecordCount();
+    
+    // Add event listeners for title inputs
+    const mainInput = document.getElementById("mainTitle");
+    const tableInput = document.getElementById("printTitleInput");
+    const chartInput = document.getElementById("printChartTitleInput");
+    
+    if (mainInput) {
+        mainInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updateMainTitle();
+                this.blur();
+            }
+        });
+    }
+    
+    if (tableInput) {
+        tableInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updatePrintTitles();
+                this.blur();
+            }
+        });
+    }
+    
+    if (chartInput) {
+        chartInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                updatePrintTitles();
+                this.blur();
+            }
+        });
+    }
+};
+
+// ============= Modify Print All Function =============
+const originalPrintAll = printAll;
+printAll = function() {
+    const lang = document.getElementById("language").value;
+    const t = translations[lang];
+
+    if (logs.length === 0) {
+        alert(t.noData);
+        return;
+    }
+
+    // Prepare print table
+    const printTableBody = document.getElementById("printTableBody");
+    if (printTableBody) {
+        printTableBody.innerHTML = "";
+        
+        const sorted = [...logs].reverse();
+        sorted.forEach(log => {
+            const row = document.createElement("tr");
+            const displayName = t.statuses[log.status] || log.status;
+            row.innerHTML = `
+                <td>${log.date}</td>
+                <td>${displayName}</td>
+            `;
+            printTableBody.appendChild(row);
+        });
+    }
+
+    // Update print titles and dates using custom titles
+    const printTitle = document.getElementById("printTitle");
+    const printChartTitle = document.getElementById("printChartTitle");
+    const printDate = document.getElementById("printDate");
+    const printDate2 = document.getElementById("printDate2");
+    
+    if (printTitle) printTitle.textContent = customTitles.printTable;
+    if (printChartTitle) printChartTitle.textContent = customTitles.printChart;
+    
+    const now = new Date().toLocaleString();
+    if (printDate) printDate.textContent = now;
+    if (printDate2) printDate2.textContent = now;
+
+    // Prepare print chart
+    const categories = getCategoryData();
+    const { labels, data } = processCategoryData(categories, t);
+
+    if (data.length === 0) {
+        alert(t.noChartData);
+        return;
+    }
+
+    // Show print area
+    const printArea = document.getElementById("printArea");
+    if (printArea) {
+        printArea.style.display = "block";
+        printArea.offsetHeight;
+    }
+
+    // Create print chart
+    setTimeout(() => {
+        const printCanvas = document.getElementById("printChart");
+        if (!printCanvas) return;
+        
+        const printCtx = printCanvas.getContext("2d");
+        
+        if (printChart) {
+            printChart.destroy();
+            printChart = null;
+        }
+        
+        // Set canvas size
+        const container = printCanvas.parentElement;
+        if (container) {
+            const rect = container.getBoundingClientRect();
+            printCanvas.width = container.clientWidth || 500;
+            printCanvas.height = container.clientHeight || 380;
+        }
+        
+        const colors = data.map((_, index) => {
+            const keys = Object.keys(categories).filter(k => categories[k] > 0);
+            return statusColors[keys[index]] || getColors(data.length)[index];
+        });
+        
+        printChart = new Chart(printCtx, {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: "#fff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                        labels: {
+                            font: { size: 14, weight: "bold" },
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: "circle"
+                        }
+                    }
+                }
+            }
+        });
+
+        // Wait for chart to render then print
+        setTimeout(() => {
+            window.print();
+        }, 800);
+    }, 300);
+};

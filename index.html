@@ -18,8 +18,29 @@
                     <option value="hu">Magyar</option>
                 </select>
             </div>
-            <h1 id="title">📞Father's visits</h1>
+            <div class="title-control">
+                <input type="text" id="mainTitle" value="📞Father's visits" 
+                       onchange="updateMainTitle()" placeholder="Enter main title..." />
+                <button onclick="editMainTitle()" class="btn-small btn-info">✏️ Edit Title</button>
+            </div>
         </header>
+
+        <!-- Custom Titles Section -->
+        <section class="titles-section">
+            <h3 id="titlesTitle">📝 Custom Titles for Print</h3>
+            <div class="titles-control">
+                <div class="title-input-group">
+                    <label for="printTitleInput" id="printTitleLabel">📄 Table Title:</label>
+                    <input type="text" id="printTitleInput" value="Visiting - Records" 
+                           onchange="updatePrintTitles()" placeholder="Enter table title..." />
+                </div>
+                <div class="title-input-group">
+                    <label for="printChartTitleInput" id="printChartTitleLabel">📊 Statistics Title:</label>
+                    <input type="text" id="printChartTitleInput" value="Visiting - Statistics" 
+                           onchange="updatePrintTitles()" placeholder="Enter statistics title..." />
+                </div>
+            </div>
+        </section>
 
         <!-- Input Form -->
         <section class="form-section">
@@ -123,7 +144,7 @@
     <div id="printArea" style="display: none;">
         <!-- Page 1: Table -->
         <div class="print-page" id="printPage1">
-            <h1 id="printTitle">Contact Log - Records</h1>
+            <h1 id="printTitle">Visiting - Records</h1>
             <table class="print-table" id="printTable">
                 <thead>
                     <tr>
@@ -140,7 +161,7 @@
 
         <!-- Page 2: Chart -->
         <div class="print-page" id="printPage2">
-            <h1 id="printChartTitle">Contact Log - Statistics</h1>
+            <h1 id="printChartTitle">Visiting - Statistics</h1>
             <div class="print-chart-wrapper">
                 <div class="print-chart-container">
                     <canvas id="printChart"></canvas>
