@@ -4,14 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Contact Log</title>
-    <!-- Chart.js with Datalabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <div class="container">
-        <!-- Header and Language Selection -->
+        <!-- Header -->
         <header class="header">
             <div class="language-box">
                 <label for="language">🌐 Language:</label>
@@ -21,7 +20,7 @@
                 </select>
             </div>
             <div class="title-control">
-                <input type="text" id="mainTitle" value="📞Father's visits" 
+                <input type="text" id="mainTitle" value="📞 Father's visits" 
                        onchange="updateMainTitle()" placeholder="Enter main title..." />
                 <button onclick="editMainTitle()" class="btn-small btn-info">✏️ Edit Title</button>
             </div>
@@ -44,6 +43,15 @@
             </div>
         </section>
 
+        <!-- Column Management -->
+        <section class="columns-section">
+            <h3 id="columnsTitle">📋 Manage Columns</h3>
+            <div class="columns-control">
+                <div id="columnsList" class="columns-list"></div>
+                <button onclick="addColumn()" class="btn-small btn-success" id="addColumnBtn">➕ Add Column</button>
+            </div>
+        </section>
+
         <!-- Input Form -->
         <section class="form-section">
             <div class="form-box">
@@ -51,51 +59,22 @@
                     <label for="date" id="dateLabel">📅 Date</label>
                     <input type="date" id="date" />
                 </div>
-                <div class="input-group">
-                    <label for="status" id="statusLabel">📌 Status</label>
-                    <select id="status">
-                        <option value="father_cancelled">Father Cancelled</option>
-                        <option value="father_verified">Father Verified</option>
-                        <option value="mother_cancelled">Mother Cancelled</option>
-                        <option value="medical">Medical Certificate</option>
-                        <option value="provable">Provable</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label for="customStatus" id="customStatusLabel">✏️ Custom Status</label>
-                    <input type="text" id="customStatus" placeholder="Enter custom status..." />
-                </div>
+                <div id="statusInputs" class="status-inputs-container"></div>
                 <button onclick="addEntry()" id="addBtn" class="btn-primary">
                     ➕ Add
                 </button>
+            </div>
+            <div class="custom-status-helper">
+                <label for="customStatus" id="customStatusLabel">✏️ Quick Add Custom Status</label>
+                <input type="text" id="customStatus" placeholder="Enter new status..." />
+                <button onclick="addCustomStatusFromInput()" class="btn-small btn-info">➕ Add</button>
             </div>
         </section>
 
         <!-- Color Management -->
         <section class="color-section">
             <h3 id="colorTitle">🎨 Status Colors</h3>
-            <div class="color-management" id="colorManagement">
-                <div class="color-item">
-                    <span>Father Cancelled</span>
-                    <input type="color" value="#ef4444" onchange="updateColor('father_cancelled', this.value)" />
-                </div>
-                <div class="color-item">
-                    <span>Father Verified</span>
-                    <input type="color" value="#3b82f6" onchange="updateColor('father_verified', this.value)" />
-                </div>
-                <div class="color-item">
-                    <span>Mother Cancelled</span>
-                    <input type="color" value="#f59e0b" onchange="updateColor('mother_cancelled', this.value)" />
-                </div>
-                <div class="color-item">
-                    <span>Medical Certificate</span>
-                    <input type="color" value="#10b981" onchange="updateColor('medical', this.value)" />
-                </div>
-                <div class="color-item">
-                    <span>Provable</span>
-                    <input type="color" value="#8b5cf6" onchange="updateColor('provable', this.value)" />
-                </div>
-            </div>
+            <div class="color-management" id="colorManagement"></div>
             <div id="customColorsContainer"></div>
             <button onclick="addCustomColor()" class="btn-small btn-success">➕ Add Custom Color</button>
         </section>
@@ -109,10 +88,8 @@
             <div class="table-wrapper">
                 <table>
                     <thead>
-                        <tr>
+                        <tr id="tableHeaders">
                             <th id="dateHeader">📅 Date</th>
-                            <th id="statusHeader">📌 Status</th>
-                            <th id="actionsHeader">⚙️ Actions</th>
                         </tr>
                     </thead>
                     <tbody id="logTable"></tbody>
@@ -142,32 +119,22 @@
         </section>
     </div>
 
-    <!-- Print Area -->
-    <div id="printArea" style="display: none;">
-        <!-- Page 1: Table -->
+    <!-- ===== PRINT AREA ===== -->
+    <div id="printArea">
         <div class="print-page" id="printPage1">
             <h1 id="printTitle">Visiting - Records</h1>
             <table class="print-table" id="printTable">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
+                <thead id="printTableHeaders"><tr><th>Date</th></tr></thead>
                 <tbody id="printTableBody"></tbody>
             </table>
             <div class="print-footer">
                 <p>Generated on: <span id="printDate"></span></p>
             </div>
         </div>
-
-        <!-- Page 2: Chart -->
         <div class="print-page" id="printPage2">
             <h1 id="printChartTitle">Visiting - Statistics</h1>
-            <div class="print-chart-wrapper">
-                <div class="print-chart-container">
-                    <canvas id="printChart"></canvas>
-                </div>
+            <div class="print-chart-wrapper" id="printChartWrapper">
+                <!-- Charts will be inserted here -->
             </div>
             <div class="print-footer">
                 <p>Generated on: <span id="printDate2"></span></p>
@@ -175,6 +142,11 @@
         </div>
     </div>
 
+    <!-- ===== SCRIPTS ===== -->
+    <script src="tr.js"></script>
+    <script src="colorManager.js"></script>
+    <script src="chartManager.js"></script>
+    <script src="tableManager.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
