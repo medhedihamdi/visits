@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact Log</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="language-box">
+                <label for="language">🌐 Language:</label>
+                <select id="language" onchange="changeLanguage()">
+                    <option value="en">English</option>
+                    <option value="hu">Magyar</option>
+                </select>
+            </div>
+            <div class="title-control">
+                <input type="text" id="mainTitle" value="📞 Father's visits" 
+                       onchange="updateMainTitle()" placeholder="Enter main title..." />
+                <button onclick="editMainTitle()" class="btn-small btn-info">✏️ Edit Title</button>
+            </div>
+        </header>
+
+        <!-- Custom Titles Section -->
+        <section class="titles-section">
+            <h3 id="titlesTitle">📝 Custom Titles for Print</h3>
+            <div class="titles-control">
+                <div class="title-input-group">
+                    <label for="printTitleInput" id="printTitleLabel">📄 Table Title:</label>
+                    <input type="text" id="printTitleInput" value="Visiting - Records" 
+                           onchange="updatePrintTitles()" placeholder="Enter table title..." />
+                </div>
+                <div class="title-input-group">
+                    <label for="printChartTitleInput" id="printChartTitleLabel">📊 Statistics Title:</label>
+                    <input type="text" id="printChartTitleInput" value="Visiting - Statistics" 
+                           onchange="updatePrintTitles()" placeholder="Enter statistics title..." />
+                </div>
+            </div>
+        </section>
+
+        <!-- Column Management -->
+        <section class="columns-section">
+            <h3 id="columnsTitle">📋 Manage Columns</h3>
+            <div class="columns-control">
+                <div id="columnsList" class="columns-list"></div>
+                <button onclick="addColumn()" class="btn-small btn-success" id="addColumnBtn">➕ Add Column</button>
+            </div>
+        </section>
+
+        <!-- Input Form -->
+        <section class="form-section">
+            <div class="form-box">
+                <div class="input-group">
+                    <label for="date" id="dateLabel">📅 Date</label>
+                    <input type="date" id="date" />
+                </div>
+                <div id="statusInputs" class="status-inputs-container"></div>
+                <button onclick="addEntry()" id="addBtn" class="btn-primary">
+                    ➕ Add
+                </button>
+            </div>
+            <div class="custom-status-helper">
+                <label for="customStatus" id="customStatusLabel">✏️ Quick Add Custom Status</label>
+                <input type="text" id="customStatus" placeholder="Enter new status..." />
+                <button onclick="addCustomStatusFromInput()" class="btn-small btn-info">➕ Add</button>
+            </div>
+        </section>
+
+        <!-- Color Management -->
+        <section class="color-section">
+            <h3 id="colorTitle">🎨 Status Colors</h3>
+            <div id="customColorsContainer"></div>
+        </section>
+
+        <!-- Table -->
+        <section class="table-section">
+            <div class="table-header">
+                <h2 id="recordsTitle">📋 Records</h2>
+                <span id="recordCount">0</span>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr id="tableHeaders">
+                            <th id="dateHeader">📅 Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logTable"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Control Buttons -->
+        <div class="btn-group">
+            <button onclick="generateChart()" id="statsBtn" class="btn-success">
+                📊 Statistics
+            </button>
+            <button onclick="printAll()" id="printBtn" class="btn-secondary">
+                🖨️ Print
+            </button>
+            <button onclick="clearAll()" id="clearBtn" class="btn-danger">
+                🗑️ Clear All
+            </button>
+        </div>
+
+        <!-- Chart -->
+        <section class="chart-section" id="chartSection" style="display: none;">
+            <h2 id="chartTitle">📊 Statistics</h2>
+            <div class="chart-container">
+                <canvas id="myChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== PRINT AREA ===== -->
+    <div id="printArea">
+        <div class="print-page" id="printPage1">
+            <h1 id="printTitle">Visiting - Records</h1>
+            <table class="print-table" id="printTable">
+                <thead id="printTableHeaders"><tr><th>Date</th></tr></thead>
+                <tbody id="printTableBody"></tbody>
+            </table>
+            <div class="print-footer">
+                <p>Generated on: <span id="printDate"></span></p>
+            </div>
+        </div>
+        <div class="print-page" id="printPage2">
+            <h1 id="printChartTitle">Visiting - Statistics</h1>
+            <div class="print-chart-wrapper" id="printChartWrapper">
+                <!-- Charts will be inserted here -->
+            </div>
+            <div class="print-footer">
+                <p>Generated on: <span id="printDate2"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="translations.js"></script>
+    <script src="colorManager.js"></script>
+    <script src="chartManager.js"></script>
+    <script src="tableManager.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
