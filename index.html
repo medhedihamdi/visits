@@ -57,7 +57,12 @@
             <div class="form-box">
                 <div class="input-group">
                     <label for="date" id="dateLabel">📅 Date</label>
-                    <input type="date" id="date" />
+                    <div class="date-input-wrapper">
+                        <input type="date" id="date" />
+                        <button id="toggleDateBtn" class="btn-small btn-toggle-date" onclick="toggleDateColumn()" title="Toggle Date Column Visibility">
+                            <span id="dateToggleIcon">👁️</span>
+                        </button>
+                    </div>
                 </div>
                 <div id="statusInputs" class="status-inputs-container"></div>
                 <button onclick="addEntry()" id="addBtn" class="btn-primary">

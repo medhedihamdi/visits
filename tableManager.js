@@ -7,6 +7,7 @@ let columns = [
     { id: 'status_1', name: 'Status', visible: true }
 ];
 let nextColumnId = 2;
+let isDateColumnVisible = true; // متغير للتحكم في رؤية عمود التاريخ
 
 // ============= Load / Save Helpers =============
 function loadData() {
@@ -40,6 +41,12 @@ function loadData() {
         nextColumnId = 2; 
     }
     
+    // تحميل حالة رؤية عمود التاريخ
+    const savedDateVisibility = localStorage.getItem("dateColumnVisible");
+    if (savedDateVisibility !== null) {
+        isDateColumnVisible = savedDateVisibility === 'true';
+    }
+    
     // Load custom statuses and colors from colorManager
     if (typeof loadColorData === 'function') {
         loadColorData();
@@ -49,6 +56,7 @@ function loadData() {
 function saveData() {
     localStorage.setItem("contactLogs", JSON.stringify(logs));
     localStorage.setItem("columns", JSON.stringify(columns));
+    localStorage.setItem("dateColumnVisible", String(isDateColumnVisible));
     updateRecordCount();
     
     // Save color data if available
@@ -60,6 +68,36 @@ function saveData() {
 function updateRecordCount() {
     const el = document.getElementById("recordCount");
     if (el) el.textContent = logs.length;
+}
+
+// ============= Toggle Date Column =============
+function toggleDateColumnInternal() {
+    isDateColumnVisible = !isDateColumnVisible;
+    saveData();
+    renderTable();
+    updateDateToggleButton();
+}
+
+function updateDateToggleButton() {
+    const btn = document.getElementById('toggleDateBtn');
+    const icon = document.getElementById('dateToggleIcon');
+    if (btn && icon) {
+        if (isDateColumnVisible) {
+            btn.classList.remove('inactive');
+            btn.classList.add('active');
+            icon.textContent = '👁️';
+            btn.title = 'Hide Date Column';
+        } else {
+            btn.classList.remove('active');
+            btn.classList.add('inactive');
+            icon.textContent = '🚫';
+            btn.title = 'Show Date Column';
+        }
+    }
+}
+
+function isDateVisible() {
+    return isDateColumnVisible;
 }
 
 // ============= Columns Management =============
@@ -234,7 +272,7 @@ function addEntryInternal() {
         if (input) {
             const val = input.value.trim();
             if (val) {
-                const lang = document.getElementById("language").value;
+                // التحقق من وجود الحالة وإضافتها إذا كانت جديدة
                 const all = getAllStatusList();
                 if (!all.includes(val)) {
                     if (typeof addCustomStatus === 'function') {
@@ -301,27 +339,35 @@ function renderTable() {
     const headersRow = document.getElementById("tableHeaders");
     if (!table || !headersRow) return;
     const visibleCols = getVisibleColumns();
-    headersRow.innerHTML = `<th id="dateHeader">📅 Date</th>`;
+    
+    // بناء رأس الجدول مع مراعاة رؤية عمود التاريخ
+    let headerHTML = '';
+    if (isDateColumnVisible) {
+        headerHTML += `<th id="dateHeader">📅 Date</th>`;
+    }
     visibleCols.forEach(col => {
-        const th = document.createElement("th");
-        th.textContent = col.name;
-        headersRow.appendChild(th);
+        headerHTML += `<th>${col.name}</th>`;
     });
     const actionsTh = document.createElement("th");
     actionsTh.id = "actionsHeader";
     actionsTh.textContent = "⚙️ Actions";
     actionsTh.style.minWidth = "80px";
+    headersRow.innerHTML = headerHTML;
     headersRow.appendChild(actionsTh);
 
     if (logs.length === 0) {
-        table.innerHTML = `<tr><td colspan="${visibleCols.length + 2}" class="empty-msg">${t.empty}</td></tr>`;
+        const colspan = (isDateColumnVisible ? 1 : 0) + visibleCols.length + 1;
+        table.innerHTML = `<tr><td colspan="${colspan}" class="empty-msg">${t.empty}</td></tr>`;
         updateRecordCount();
         return;
     }
     table.innerHTML = "";
     const sorted = [...logs].reverse();
     sorted.forEach(log => {
-        let rowHTML = `<td>${log.date}</td>`;
+        let rowHTML = '';
+        if (isDateColumnVisible) {
+            rowHTML += `<td>${log.date}</td>`;
+        }
         visibleCols.forEach(col => {
             const val = log[col.id] || '';
             const color = typeof getStatusColor === 'function' ? getStatusColor(val) : '#94a3b8';
@@ -369,8 +415,6 @@ function changeLanguageInternal() {
     document.getElementById("clearBtn").innerText = t.clear;
     document.getElementById("recordsTitle").innerText = t.records;
     document.getElementById("chartTitle").innerText = t.chartTitle;
-    document.getElementById("dateHeader").innerText = t.date;
-    document.getElementById("actionsHeader").innerText = t.actions;
     document.getElementById("customStatus").placeholder = t.enterCustomStatus;
     const titlesTitle = document.getElementById("titlesTitle");
     const printTableLabel = document.getElementById("printTitleLabel");
@@ -399,6 +443,7 @@ function initApp() {
     renderColumnManagement();
     renderStatusInputs();
     renderTable();
+    updateDateToggleButton();
     if (typeof renderColorManagement === 'function') {
         renderColorManagement();
     }

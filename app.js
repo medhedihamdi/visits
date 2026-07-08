@@ -3,7 +3,9 @@
 
 console.log('app.js loaded');
 
-// ===== ربط الدوال من tableManager =====
+// ===== تعريف الدوال في النطاق العام =====
+// هذه الدوال ستستدعي الدوال الداخلية من الملفات الأخرى
+
 window.addColumn = function() {
     console.log('addColumn called');
     if (typeof addColumnInternal === 'function') {
@@ -63,7 +65,6 @@ window.clearAll = function() {
     }
 };
 
-// ===== ربط الدوال من chartManager =====
 window.generateChart = function() {
     console.log('generateChart called from window');
     if (typeof generateChartInternal === 'function') {
@@ -84,18 +85,10 @@ window.printAll = function() {
     }
 };
 
-// ===== ربط الدوال من colorManager =====
 window.addCustomStatusFromInput = function() {
     console.log('addCustomStatusFromInput called');
     if (typeof addCustomStatusFromInputInternal === 'function') {
         addCustomStatusFromInputInternal();
-    }
-};
-
-window.addCustomColor = function() {
-    console.log('addCustomColor called');
-    if (typeof addCustomColorInternal === 'function') {
-        addCustomColorInternal();
     }
 };
 
@@ -141,6 +134,14 @@ window.changeLanguage = function() {
     }
 };
 
+// ===== دوال جديدة للتحكم في عمود التاريخ =====
+window.toggleDateColumn = function() {
+    console.log('toggleDateColumn called');
+    if (typeof toggleDateColumnInternal === 'function') {
+        toggleDateColumnInternal();
+    }
+};
+
 // ===== تهيئة التطبيق =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOMContentLoaded - initializing app');
@@ -155,3 +156,4 @@ document.addEventListener('DOMContentLoaded', function() {
 console.log('Window functions registered:');
 console.log('generateChart:', typeof window.generateChart);
 console.log('printAll:', typeof window.printAll);
+console.log('toggleDateColumn:', typeof window.toggleDateColumn);

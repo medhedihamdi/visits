@@ -208,7 +208,6 @@ function generateChartInternal() {
                         font-size: 13px;
                         color: #1e293b;
                     `;
-                    // استخدام inline style مع !important لضمان ظهور اللون
                     item.innerHTML = `
                         <span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${colors[i]} !important;flex-shrink:0;border:1px solid rgba(0,0,0,0.1);"></span>
                         <span style="flex:1;">${label}</span>
@@ -305,7 +304,7 @@ function printAllInternal() {
             printWrapper.appendChild(card);
         }
 
-        // إنشاء الرسم البياني باستخدام Canvas
+        // إنشاء الرسم البياني باستخدام Canvas (للنسخ الاحتياطي)
         const promise = createPrintChartWithCanvas(card, col, labels, data, statusKeys);
         chartPromises.push(promise);
     });
@@ -367,7 +366,7 @@ function preparePrintHeaders() {
     document.getElementById("printDate2").textContent = now;
 }
 
-// ============= إنشاء بطاقة الرسم البياني للطباعة =============
+// ============= إنشاء بطاقة الرسم البياني للطباعة مع النسب المئوية =============
 function createPrintChartCard(col, labels, data, statusKeys) {
     const total = data.reduce((a, b) => a + b, 0);
     const colors = statusKeys.map(key => getStatusColor(key));
@@ -409,7 +408,7 @@ function createPrintChartCard(col, labels, data, statusKeys) {
         width: 100%;
     `;
 
-    // === رسم الدائرة باستخدام SVG ===
+    // === رسم الدائرة باستخدام SVG مع النسب المئوية ===
     const svgWrapper = document.createElement('div');
     svgWrapper.style.cssText = `
         position: relative;
@@ -422,9 +421,7 @@ function createPrintChartCard(col, labels, data, statusKeys) {
     svg.setAttribute('width', '200');
     svg.setAttribute('height', '200');
     svg.setAttribute('viewBox', '0 0 200 200');
-    svg.style.cssText = 'width:100%;height:100%;';
-    // إضافة خاصية لضمان ظهور الألوان في الطباعة
-    svg.setAttribute('style', 'print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;');
+    svg.style.cssText = 'width:100%;height:100%;print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;';
     
     const centerX = 100;
     const centerY = 100;
@@ -449,15 +446,20 @@ function createPrintChartCard(col, labels, data, statusKeys) {
         path.setAttribute('fill', colors[i]);
         path.setAttribute('stroke', 'white');
         path.setAttribute('stroke-width', '2');
-        // إضافة خاصية لضمان ظهور اللون في الطباعة
         path.setAttribute('style', 'print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;');
+        svg.appendChild(path);
         
-        if (value / total > 0.08) {
-            const midAngle = startAngle + sliceAngle / 2;
-            const labelRadius = radius * 0.6;
-            const lx = centerX + labelRadius * Math.cos(midAngle);
-            const ly = centerY + labelRadius * Math.sin(midAngle);
-            
+        // === إضافة النسبة المئوية داخل كل قطعة ===
+        // حساب منتصف الزاوية
+        const midAngle = startAngle + sliceAngle / 2;
+        // نصف قطر النص (أقرب للمركز قليلاً)
+        const labelRadius = radius * 0.65;
+        const lx = centerX + labelRadius * Math.cos(midAngle);
+        const ly = centerY + labelRadius * Math.sin(midAngle);
+        
+        // إضافة النص إذا كانت القطعة كبيرة بما يكفي
+        const percentage = ((value / total) * 100);
+        if (percentage > 8) { // فقط إذا كانت النسبة أكبر من 8%
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             text.setAttribute('x', lx);
             text.setAttribute('y', ly);
@@ -466,11 +468,12 @@ function createPrintChartCard(col, labels, data, statusKeys) {
             text.setAttribute('fill', 'white');
             text.setAttribute('font-size', '14');
             text.setAttribute('font-weight', 'bold');
-            text.textContent = ((value / total) * 100).toFixed(0) + '%';
+            text.setAttribute('style', 'print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;');
+            // إضافة ظل خفيف للنص لتحسين القراءة
+            text.textContent = percentage.toFixed(1) + '%';
             svg.appendChild(text);
         }
         
-        svg.appendChild(path);
         startAngle = endAngle;
     });
     
@@ -489,10 +492,11 @@ function createPrintChartCard(col, labels, data, statusKeys) {
         border-radius: 8px;
         border: 1px solid #e2e8f0;
         text-align: left;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
     `;
-    // إضافة خاصية لضمان ظهور الخلفية في الطباعة
     legendWrapper.style.setProperty('background', '#f8fafc', 'important');
-    legendWrapper.setAttribute('style', legendWrapper.style.cssText + 'print-color-adjust: exact; -webkit-print-color-adjust: exact; color-adjust: exact;');
     
     legendWrapper.innerHTML = '<div style="font-weight:600;font-size:13px;color:#475569;margin-bottom:6px;">📊 Legend</div>';
     labels.forEach((label, i) => {
@@ -508,7 +512,7 @@ function createPrintChartCard(col, labels, data, statusKeys) {
             color: #1e293b;
         `;
         
-        // === استخدام SVG صغير بدلاً من div لضمان ظهور اللون ===
+        // استخدام SVG صغير للدائرة الملونة
         const colorSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         colorSvg.setAttribute('width', '16');
         colorSvg.setAttribute('height', '16');
@@ -592,7 +596,7 @@ function createPrintChartWithCanvas(card, col, labels, data, statusKeys) {
                                 color: '#fff',
                                 font: { weight: 'bold', size: 11 },
                                 formatter: function(val) { 
-                                    return ((val / total) * 100).toFixed(0) + '%'; 
+                                    return ((val / total) * 100).toFixed(1) + '%'; 
                                 },
                                 anchor: 'center',
                                 align: 'center',
